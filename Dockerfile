@@ -1,28 +1,32 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
-# Set node env
-ENV NODE_ENV production
+# Set environment variables
+ENV NODE_ENV=production
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Set WORKDIR
 WORKDIR /app
 
-# Copy project files
-COPY --chown=node:node . /app
+# Copy only package.json and package-lock.json first
+COPY --chown=node:node package*.json ./
 
-# NPM Update
-RUN npm update -g npm
+# Update NPM to the latest version
+RUN npm install -g npm@latest
 
-# Install packages
-RUN npm install
+# Install the latest versions of dependencies
+RUN npm install --production --legacy-peer-deps
 
-# Copy entrypoint
-# to be able to pass process argv
-COPY docker/entrypoint /
+# Copy the rest of the project files
+COPY --chown=node:node . .
 
+# Copy entrypoint script
+COPY docker/entrypoint /entrypoint
+
+# Make entrypoint executable
 RUN chmod +x /entrypoint
 
-# Set user as node
+# Switch to a non-root user
 USER node
 
-# Start app
+# Start the application
 ENTRYPOINT ["/entrypoint"]
